@@ -66,7 +66,7 @@ func parse_message(raw []byte, dict slack_list.Top) string {
 		file := ""
 		if val["type"].(string) == "message" && val["user"] != nil {
 			if f := val["file"]; f != nil {
-				file = f.(map[string]interface{})["url_private_download"].(string)
+				file = f.(map[string]interface{})["url_private"].(string)
 			}
 			ms := Message{
 				Name: val["user"].(string),
