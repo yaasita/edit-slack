@@ -20,6 +20,7 @@ type Message struct {
 	Name string
 	Time float64
 	Text string
+	File string
 }
 type Messages []Message
 
@@ -62,11 +63,16 @@ func parse_message(raw []byte, dict slack_list.Top) string {
 	for _, v := range c {
 		val := v.(map[string]interface{})
 		time_f, _ := strconv.ParseFloat(val["ts"].(string), 64)
+		file := ""
 		if val["type"].(string) == "message" && val["user"] != nil {
+			if f := val["file"]; f != nil {
+				file = f.(map[string]interface{})["url_private_download"].(string)
+			}
 			ms := Message{
 				Name: val["user"].(string),
 				Time: time_f,
 				Text: val["text"].(string),
+				File: file,
 			}
 			ch_messages = append(ch_messages, ms)
 		}
@@ -75,7 +81,10 @@ func parse_message(raw []byte, dict slack_list.Top) string {
 	sort.Sort(ch_messages)
 	for _, v := range ch_messages {
 		t := time.Unix(int64(v.Time), 0)
-		messages = messages + fmt.Sprintf("%s (%s): %s\n", dict.Id2Name(v.Name), t.Format("2006/01/02 15:04"), v.Text)
+		messages += fmt.Sprintf("%s (%s): %s\n", dict.Id2Name(v.Name), t.Format("2006/01/02 15:04"), v.Text)
+		if v.File != "" {
+			messages += fmt.Sprintf("  download link: %s\n", v.File)
+		}
 	}
 	return messages
 }
