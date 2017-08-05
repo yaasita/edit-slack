@@ -1,9 +1,7 @@
 package main
 
 import (
-	"./slack_history"
-	"./slack_list"
-	"./slack_post"
+	"./slack"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -18,63 +16,48 @@ var outfile *string = flag.String("outfile", "", "out file")
 func main() {
 	flag.Parse()
 	// api token
-	if *api_token == "" {
+	if *api_token == "" || *cachefile == "" || *outfile == "" {
 		usage()
 	}
-	// cache file
-	hash_file := ""
-	if *cachefile == "" {
-		fw, err := ioutil.TempFile("", "slack")
-		if err != nil {
-			panic(err)
-		}
-		hash_file = fw.Name()
-	} else {
-		hash_file = *cachefile
-	}
-	dict := slack_list.List(*api_token, hash_file)
-	// out file
-	if *outfile == "" {
-		usage()
-	}
+	slk := slack.New(*api_token, *cachefile)
 	// main
 	if len(flag.Args()) == 0 {
 		usage()
 	}
-	if r := regexp.MustCompile(`(history|post)$`); r.MatchString(flag.Args()[0]) && len(flag.Args()) < 2 {
+	if r := regexp.MustCompile(`(history|post|search)$`); r.MatchString(flag.Args()[0]) && len(flag.Args()) < 2 {
 		usage()
 	}
 	var stdin []byte
 	if r := regexp.MustCompile(`post$`); r.MatchString(flag.Args()[0]) {
 		stdin, _ = ioutil.ReadAll(os.Stdin)
 	}
-	var b string
+	var result string
 	switch flag.Args()[0] {
 	case "channels.list":
-		b = slack_history.ChList(dict)
+		result = slk.ChList()
 	case "channels.history":
-		b = slack_history.ChHistory(*api_token, dict, flag.Args()[1])
+		result = slk.ChHistory(flag.Args()[1])
 	case "channels.post":
-		b = slack_post.ChannelPost(*api_token, dict, flag.Args()[1], string(stdin))
+		slk.ChannelPost(flag.Args()[1], string(stdin))
 	case "users.list":
-		b = slack_history.UserList(dict)
+		result = slk.UserList()
 	case "users.history":
-		b = slack_history.UserHistory(*api_token, dict, flag.Args()[1])
+		result = slk.UserHistory(flag.Args()[1])
 	case "users.post":
-		b = slack_post.UserPost(*api_token, dict, flag.Args()[1], string(stdin))
+		slk.UserPost(flag.Args()[1], string(stdin))
 	case "groups.list":
-		b = slack_history.PgList(dict)
+		result = slk.PgList()
 	case "groups.history":
-		b = slack_history.PgHistory(*api_token, dict, flag.Args()[1])
+		result = slk.PgHistory(flag.Args()[1])
 	case "groups.post":
-		b = slack_post.GroupPost(*api_token, dict, flag.Args()[1], string(stdin))
+		slk.GroupPost(flag.Args()[1], string(stdin))
+	case "search":
+		result = slk.Search(flag.Args()[1])
 	default:
 		usage()
 	}
-	save_result(b)
-}
-func save_result(result string) {
 	ioutil.WriteFile(*outfile, []byte(result+"\n"), os.ModePerm)
+	slk.SaveCache()
 }
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s: command\n", os.Args[0])
@@ -90,6 +73,7 @@ func usage() {
   groups.list: Display a list of private groups
   groups.history GROUP: Display history of private group
   groups.post GROUP: Post standard input to private group
+  search WORD: search word
 `)
 	os.Exit(1)
 }
