@@ -43,7 +43,7 @@ func (slk SlackData) parse_result(raw []byte) string {
 		name := ""
 		time_f, _ := strconv.ParseFloat(val["ts"].(string), 64)
 		text := ""
-		if val["type"].(string) == "message" {
+		if val["type"].(string) == "message" && (val["user"] != nil || val["username"] != nil) && val["text"] != nil {
 			if val["user"] == nil {
 				name = val["username"].(string)
 			} else {

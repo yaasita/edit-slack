@@ -88,8 +88,8 @@ func (slk SlackData) parse_message(raw []byte) string {
 		file := ""
 		text := ""
 		reaction := ""
-		if val["type"].(string) == "message" && (val["user"] != nil || val["username"] != nil) {
-			// fmt.Println(val["ts"].(string))
+		if val["type"].(string) == "message" && (val["user"] != nil || val["username"] != nil) && val["text"] != nil {
+			//fmt.Println(val["ts"].(string))
 			if val["user"] == nil {
 				name = val["username"].(string)
 			} else {

@@ -13,7 +13,7 @@ func TestHistory(t *testing.T) {
 	debugfile := "/tmp/go-debug"
 	slk := New(token, cachefile, debugfile)
 	var str string
-	str = slk.ChHistory("nippou")
+	str = slk.ChHistory("server")
 	ioutil.WriteFile("/tmp/go-out-ch", []byte(str), os.ModePerm)
 	//str = slk.UserHistory("yamasita")
 	//ioutil.WriteFile("/tmp/go-out-user", []byte(str), os.ModePerm)
