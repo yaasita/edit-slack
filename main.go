@@ -9,6 +9,8 @@ import (
 	"regexp"
 )
 
+const version = "0.8.1"
+
 var api_token *string = flag.String("token", "", "api token")
 var cachefile *string = flag.String("cache", "", "cache file")
 var outfile *string = flag.String("outfile", "", "out file")
@@ -60,7 +62,7 @@ func main() {
 	slk.SaveCache()
 }
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage of %s: command\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage:\n  %s command\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, `Commands:
@@ -75,5 +77,6 @@ func usage() {
   groups.post GROUP: Post standard input to private group
   search WORD: search word
 `)
+	fmt.Fprintf(os.Stderr, "version:\n  %s\n", version)
 	os.Exit(1)
 }
