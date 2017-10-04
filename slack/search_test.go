@@ -12,7 +12,7 @@ func TestSearch(t *testing.T) {
 	debugfile := "/tmp/go-debug"
 	slk := New(token, cachefile, debugfile)
 	str := slk.Search("from:@yamasita")
-	ioutil.WriteFile("/tmp/go-out-search", []byte(str), os.ModePerm)
+	ioutil.WriteFile("/tmp/go-out-search", []byte(str+"\n"), os.ModePerm)
 	slk.SaveCache()
 }
 

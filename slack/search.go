@@ -18,7 +18,7 @@ func (slk SlackData) Search(query string) string {
 	data := url.Values{}
 	data.Set("token", slk.Option["token"])
 	data.Add("query", query)
-	data.Add("count", "500")
+	data.Add("count", "100")
 	data.Add("sort", "timestamp")
 	client := &http.Client{}
 	r, err := http.NewRequest("POST", api_url+"search.messages", bytes.NewBufferString(data.Encode()))
@@ -43,6 +43,9 @@ func (slk SlackData) parse_result(raw []byte) string {
 		name := ""
 		time_f, _ := strconv.ParseFloat(val["ts"].(string), 64)
 		text := ""
+		if slk.Option["debugfile"] != "" {
+			fmt.Printf("start parse type=%s,  text=%s\n", val["type"], val["text"])
+		}
 		if val["type"].(string) == "message" && (val["user"] != nil || val["username"] != nil) && val["text"] != nil {
 			if val["user"] == nil {
 				name = val["username"].(string)
