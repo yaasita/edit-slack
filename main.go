@@ -1,82 +1,119 @@
 package main
 
 import (
-	"./slack"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
-	"regexp"
+
+	"github.com/yaasita/edit-slack/editslack"
 )
 
-const version = "0.8.1"
-
-var api_token *string = flag.String("token", "", "api token")
-var cachefile *string = flag.String("cache", "", "cache file")
-var outfile *string = flag.String("outfile", "", "out file")
+const version = "1.0.0"
 
 func main() {
-	flag.Parse()
-	// api token
-	if *api_token == "" || *cachefile == "" || *outfile == "" {
-		usage()
+	options := flag.NewFlagSet("options", flag.ExitOnError)
+	cache_file := options.String("cache", "", "cache file")
+	chname := options.String("chname", "", "channel name")
+	file_path := options.String("file", "", "file path")
+	file_url := options.String("furl", "", "file download url")
+	out_file := options.String("out", "", "out file")
+	token := options.String("token", "", "slack token")
+	search_word := options.String("word", "", "search word")
+	ts := options.String("ts", "", "time stamp")
+	if len(os.Args) < 2 {
+		usage(options, 1)
 	}
-	slk := slack.New(*api_token, *cachefile)
-	// main
-	if len(flag.Args()) == 0 {
-		usage()
+	switch os.Args[1] {
+	case "version":
+		fmt.Println(version)
+		os.Exit(0)
+	case "help":
+		usage(options, 0)
 	}
-	if r := regexp.MustCompile(`(history|post|search)$`); r.MatchString(flag.Args()[0]) && len(flag.Args()) < 2 {
-		usage()
+	if len(os.Args) < 3 {
+		usage(options, 1)
 	}
-	var stdin []byte
-	if r := regexp.MustCompile(`post$`); r.MatchString(flag.Args()[0]) {
-		stdin, _ = ioutil.ReadAll(os.Stdin)
+	options.Parse(os.Args[3:])
+	if *token == "" || *cache_file == "" {
+		usage(options, 1)
 	}
-	var result string
-	switch flag.Args()[0] {
-	case "channels.list":
-		result = slk.ChList()
-	case "channels.history":
-		result = slk.ChHistory(flag.Args()[1])
-	case "channels.post":
-		slk.ChannelPost(flag.Args()[1], string(stdin))
-	case "users.list":
-		result = slk.UserList()
-	case "users.history":
-		result = slk.UserHistory(flag.Args()[1])
-	case "users.post":
-		slk.UserPost(flag.Args()[1], string(stdin))
-	case "groups.list":
-		result = slk.PgList()
-	case "groups.history":
-		result = slk.PgHistory(flag.Args()[1])
-	case "groups.post":
-		slk.GroupPost(flag.Args()[1], string(stdin))
+	slk := editslack.New(*token, *cache_file)
+	switch os.Args[1] {
+	case "conversations":
+		switch os.Args[2] {
+		case "list":
+			slk.ConversationList(*out_file)
+		case "history":
+			slk.ConversationHistory(*chname, *out_file)
+		case "post":
+			stdin, err := ioutil.ReadAll(os.Stdin)
+			check(err, "stdin read error")
+			slk.ConversationPost(*chname, string(stdin))
+		case "join":
+			slk.ConversationJoin(*chname)
+		case "leave":
+			slk.ConversationLeave(*chname)
+		default:
+			usage(options, 1)
+		}
+	case "replies":
+		switch os.Args[2] {
+		case "history":
+			slk.RepliesHistory(*chname, *ts, *out_file)
+		case "post":
+			stdin, err := ioutil.ReadAll(os.Stdin)
+			check(err, "stdin read error")
+			slk.RepliesPost(*chname, *ts, string(stdin))
+		default:
+			usage(options, 1)
+		}
+	case "files":
+		switch os.Args[2] {
+		case "download":
+			slk.FileDownload(*file_url, *out_file)
+		case "upload":
+			slk.FileUpload(*file_path, *chname, *ts)
+		default:
+			usage(options, 1)
+		}
 	case "search":
-		result = slk.Search(flag.Args()[1])
+		switch os.Args[2] {
+		case "all":
+			slk.SearchAll(*search_word, *out_file)
+		default:
+			usage(options, 1)
+		}
 	default:
-		usage()
+		usage(options, 1)
 	}
-	ioutil.WriteFile(*outfile, []byte(result+"\n"), os.ModePerm)
 	slk.SaveCache()
 }
-func usage() {
-	fmt.Fprintf(os.Stderr, "Usage:\n  %s command\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "Options:\n")
-	flag.PrintDefaults()
-	fmt.Fprintf(os.Stderr, `Commands:
-  channels.list: Display a list of channels
-  channels.history CHANNEL: Display the history of the channel
-  channels.post CHANNEL: Post standard input to the channel
-  users.list: Display a list of users
-  users.history USER: Display history with user
-  users.post USER: Send standard input to the user
-  groups.list: Display a list of private groups
-  groups.history GROUP: Display history of private group
-  groups.post GROUP: Post standard input to private group
-  search WORD: search word
-`)
-	fmt.Fprintf(os.Stderr, "version:\n  %s\n", version)
-	os.Exit(1)
+func usage(options *flag.FlagSet, exitcode int) {
+	fmt.Println(os.Args[0], "<subcommand> <options>")
+	fmt.Println(
+		`subcommand: 
+  conversations list    --token TOKEN --cache CACHEFILE                         --out OUTFILE
+  conversations history --token TOKEN --cache CACHEFILE --chname CHNAME         --out OUTFILE 
+  conversations post    --token TOKEN --cache CACHEFILE --chname CHNAME 
+  conversations join    --token TOKEN --cache CACHEFILE --chname CHNAME 
+  conversations leave   --token TOKEN --cache CACHEFILE --chname CHNAME 
+  replies history       --token TOKEN --cache CACHEFILE --chname CHNAME --ts TS --out OUTFILE
+  replies post          --token TOKEN --cache CACHEFILE --chname CHNAME --ts TS
+  files download        --token TOKEN --cache CACHEFILE --furl URL              --out OUTFILE
+  files upload          --token TOKEN --cache CACHEFILE --file FILEPATH         --out OUTFILE
+  files upload          --token TOKEN --cache CACHEFILE --file FILEPATH --ts TS --out OUTFILE
+  search all            --token TOKEN --cache CACHEFILE --word WORD             --out OUTFILE
+  version
+  help
+options:`)
+	options.PrintDefaults()
+	os.Exit(exitcode)
+}
+func check(e error, s string) {
+	if e != nil {
+		fmt.Fprintln(os.Stderr, s)
+		log.Fatal(e)
+	}
 }

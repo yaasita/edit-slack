@@ -1,4 +1,5 @@
 # edit-slack
+
 CLI for [edit-slack.vim](https://github.com/yaasita/edit-slack.vim)
 
 ## manual build
