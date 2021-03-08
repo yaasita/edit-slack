@@ -10,7 +10,7 @@ import (
 	"github.com/yaasita/edit-slack/editslack"
 )
 
-const version = "1.0.0"
+const version = "1.0.1"
 
 func main() {
 	options := flag.NewFlagSet("options", flag.ExitOnError)
