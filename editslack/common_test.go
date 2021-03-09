@@ -38,3 +38,13 @@ func TestFormatTextUser(t *testing.T) {
 	//	t.Errorf("return = %s\n", after)
 	//}
 }
+func TestFormatTextEscape(t *testing.T) {
+	before := "&amp;abc"
+	after := slk.format_text(before)
+	want := "&abc\n"
+	if after != want {
+		t.Errorf("want = %#v", want)
+		t.Errorf("after = %#v", after)
+		t.Errorf("before = %#v", before)
+	}
+}

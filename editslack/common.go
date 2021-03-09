@@ -90,9 +90,10 @@ func (slk SlackData) format_text(msg string) string {
 			break
 		}
 	}
-	// replace &gt; &lt;
+	// replace &gt; &lt; &amp;
 	result = strings.Replace(result, `&gt;`, ">", -1)
 	result = strings.Replace(result, `&lt;`, "<", -1)
+	result = strings.Replace(result, `&amp;`, "&", -1)
 	return result
 }
 func format_files(files []slack.File) string {
